@@ -6,7 +6,7 @@
                "lil")
   :components ((:module "src"
                 :components
-                ((:file "finite-sequence")
+                ((:file "sequence")
                  (:file "main"))))
   :description ""
   :in-order-to ((test-op (test-op "afp-lil-tutorial/tests"))))
