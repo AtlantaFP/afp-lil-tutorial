@@ -1,5 +1,11 @@
 (uiop:define-package :afp.lil.tutorial
-  (:use :cl))
+  (:use :cl)
+  (:export
+   #:<sequence-monoid>
+   #:<sequence>
+   #:id
+   #:monoid-fold*
+   #:monoid-fold))
 
 (in-package :afp.lil.tutorial)
 
@@ -38,6 +44,14 @@
     ()
   (:singleton))
 
+(lil/core:define-interface <sequence-monoid>
+    (lil/interface/group:<monoid>)
+    ()
+  (:singleton))
+
+(defmethod lil/interface/group:id ((<i> <sequence-monoid>))
+  (lil/interface/all:empty <sequence>))
+
 ;; these are the methods that specialize the size interface on
 ;; sequence interface
 (defmethod lil/interface/size:size ((<i> <sequence>) (object sequence))
@@ -51,7 +65,7 @@
 ;; these are the methods that specialize the empty interface on
 ;; the sequence interface
 (defmethod lil/interface/empty:empty ((<i> <sequence>))
-  (make-instance 'lil/pure/empty:empty-object))
+  '())
 
 (defmethod lil/interface/empty:empty-p ((<i> <sequence>) (object lil/pure/empty:empty-object))
   t)
@@ -59,4 +73,42 @@
 (defmethod lil/interface/empty:empty-p ((<i> <sequence>) (object sequence))
   (= (lil/interface/all:size <i> object) 0))
 
-;; these will implement
+;; these will implement foldable interface
+(defmethod lil/interface/fold:fold-left ((<i> <sequence>) foldable function seed)
+  (reduce function foldable :initial-value seed))
+
+(defmethod lil/interface/fold:fold-right ((<i> <sequence>) foldable function seed)
+  (reduce function foldable :from-end t
+                            :initial-value seed))
+
+(defmethod lil/interface/fold:fold-left* ((<i> <sequence>) foldable function seed)
+  (lil/interface/fold:fold-left <i> foldable function seed))
+
+(defmethod lil/interface/fold:fold-right* ((<i> <sequence>) foldable function seed)
+  (fold-right <i> foldable function seed))
+
+
+;; Commutativity : a + b = b + a
+;; associativity : (a + b) + c = a + (b + c)
+(defmethod lil/interface/fold:monoid-fold ((<i> <sequence>)
+                                           <monoid> foldable function)
+  (lil/interface/fold:fold-left <i> foldable function
+                                (let ((id (lil/interface/all:id <sequence-monoid>)))
+                                   (if (lil/interface/all:empty-p <i> id)
+                                       (elt foldable 0)
+                                       id))))
+
+(defmethod lil/interface/fold:monoid-fold* ((<i> <sequence>)
+                                            (<monoid> <sequence-monoid>) foldable function)
+  (lil/interface/fold:fold-left* <i>
+                                 foldable
+                                 function
+                                 (let ((id (lil/interface/all:id <sequence-monoid>)))
+                                   (if (lil/interface/all:empty-p <i> id)
+                                       (elt foldable 0)
+                                       id))))
+
+;; NOTE: this current implements a shallow but not deep copy due to the some design
+;; consideration one must take when deep copying data whether user-defined or built-in.
+(defmethod lil/interface/all:copy ((<i> <sequence>) (seq sequence))
+  (copy-seq seq))

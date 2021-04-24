@@ -7,7 +7,7 @@
   :components ((:module "src"
                 :components
                 ((:file "sequence")
-                 (:file "main"))))
+                 (:file "utils"))))
   :description ""
   :in-order-to ((test-op (test-op "afp-lil-tutorial/tests"))))
 
